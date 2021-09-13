@@ -83,7 +83,7 @@ cd rootfs
 mkdir bin dev etc home lib lib64 proc sbin sys tmp usr var
 mkdir usr/bin usr/lib usr/sbin
 mkdir -p var/log
-tree -d #print file system tree 
+#tree -d #print file system tree 
 
 cd "$OUTDIR"
 if [ ! -d "${OUTDIR}/busybox" ]
@@ -136,7 +136,7 @@ sudo mknod -m 666 dev/console c 5 1
 #list created device node 
 ls -l dev 
 
-cd ${UTILITY_DIR}  ##move to utility directory
+cd ${FINDER_APP_DIR} #${UTILITY_DIR}  ##move to utility directory
 # TODO: Clean and build the writer utility
 make clean
 make CROSS_COMPILE=${CROSS_COMPILE}
