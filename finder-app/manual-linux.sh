@@ -13,13 +13,9 @@ FINDER_APP_DIR=$(realpath $(dirname $0))
 ARCH=arm64
 CROSS_COMPILE=aarch64-none-linux-gnu- 
 #writer, finder-test utlities directory path
-<<<<<<< HEAD
 UTILITY_DIR=$(pwd)
-#UTILITY_DIR=/home/mehul/Desktop/f21_aesd/assignment-1-MehulCUB/finder-app 
-=======
-#UTILITY_DIR=$(pwd)
-UTILITY_DIR=/home/mehul/Desktop/f21_aesd/assignment-1-MehulCUB/finder-app 
->>>>>>> 84dee7baf3190ee1ceee77f02eba2baf7f0adc1e
+#UTILITY_DIR=/home/mehul/Desktop/f21_aesd/aesd/assignment-1-MehulCUB/finder-app
+
 
  
 if [ $# -lt 1 ]
