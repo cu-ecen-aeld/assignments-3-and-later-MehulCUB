@@ -1,8 +1,8 @@
 #!/bin/sh
 # Tester script for assignment 1 and assignment 2
 # Author: Siddhant Jajoo
-# comments added by Mehul Patel
-
+# modified by Mehul Patel
+# modifed script for supporting script running assuming all executables are in the PATH and config files are at /etc/finder-app/conf
 set -e
 set -u
 
