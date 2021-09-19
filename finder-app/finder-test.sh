@@ -63,11 +63,13 @@ done
 
 
 #now using finder script to find number of files and number of matching matching lines with WRITESTR at WRITEDIR directory  
-OUTPUTSTRING=$(./finder.sh "$WRITEDIR" "$WRITESTR")
+#OUTPUTSTRING=$(./finder.sh "$WRITEDIR" "$WRITESTR")
+OUTPUTSTRING=$(finder.sh "$WRITEDIR" "$WRITESTR") 		#removed ./ as added in path
 
-./writer /tmp/assignment-4-result.txt "$OUTPUTSTRING"  #adding step to write a file with output of the finder command to /tmp/assignment-4-result.txt
 
-set +e
+#./writer /tmp/assignment-4-result.txt "$OUTPUTSTRING"  #adding step to write a file with output of the finder command to /tmp/assignment-4-result.txt
+writer /tmp/assignment-4-result.txt "$OUTPUTSTRING"   	#removed ./ as added in path
+
 echo ${OUTPUTSTRING} | grep "${MATCHSTR}"
 if [ $? -eq 0 ]; then
 	echo "success"

@@ -18,7 +18,7 @@ CFILES= writer.c
 SRCS= ${HFILES} ${CFILES}
 OBJS= ${CFILES:.c=.o}
 
-all:	writer  
+all: writer  
 
 writer: writer.o
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $@.o 
