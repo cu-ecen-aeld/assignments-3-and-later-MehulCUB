@@ -9,7 +9,8 @@ set -u
 NUMFILES=10			 	#Default numfiles 10 
 WRITESTR=AELD_IS_FUN 			#Default writestr “AELD_IS_FUN” 
 WRITEDIR=/tmp/aeld-data 		#Default directory /tmp/aeld-data
-username=$(cat conf/username.txt) 	#get username name from configuration file 
+#username=$(cat conf/username.txt) 	#get username name from configuration file 
+username=$(cat /etc/finder-app/conf/username.txt)	#modifying script for supporting script running assuming all executables are in the PATH and config files are at /etc/finder-app/conf
 
 #check if number of file and string to be written is not entered then use default parameters 
 if [ $# -lt 2 ]
@@ -58,6 +59,7 @@ do
 	#./writer.sh "$WRITEDIR/${username}$i.txt" "$WRITESTR"
 	./writer "$WRITEDIR/${username}$i.txt" "$WRITESTR"
 done
+
 
 #now using finder script to find number of files and number of matching matching lines with WRITESTR at WRITEDIR directory  
 OUTPUTSTRING=$(./finder.sh "$WRITEDIR" "$WRITESTR")
