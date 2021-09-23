@@ -1,15 +1,16 @@
 #!/bin/sh
 # Tester script for assignment 1 and assignment 2
 # Author: Siddhant Jajoo
-# comments added by Mehul Patel
-
+# modified by Mehul Patel
+# modifed script for supporting script running assuming all executables are in the PATH and config files are at /etc/finder-app/conf
 set -e
 set -u
 
 NUMFILES=10			 	#Default numfiles 10 
 WRITESTR=AELD_IS_FUN 			#Default writestr “AELD_IS_FUN” 
 WRITEDIR=/tmp/aeld-data 		#Default directory /tmp/aeld-data
-username=$(cat conf/username.txt) 	#get username name from configuration file 
+#username=$(cat conf/username.txt) 	#get username name from configuration file 
+username=$(cat /etc/finder-app/conf/username.txt)	#modifying script for supporting script running assuming all executables are in the PATH and config files are at /etc/finder-app/conf
 
 #check if number of file and string to be written is not entered then use default parameters 
 if [ $# -lt 2 ]
@@ -56,13 +57,19 @@ fi
 for i in $( seq 1 $NUMFILES)
 do
 	#./writer.sh "$WRITEDIR/${username}$i.txt" "$WRITESTR"
-	./writer "$WRITEDIR/${username}$i.txt" "$WRITESTR"
+	#./writer "$WRITEDIR/${username}$i.txt" "$WRITESTR"
+	writer "$WRITEDIR/${username}$i.txt" "$WRITESTR"	#changing ./writer to writer
 done
 
-#now using finder script to find number of files and number of matching matching lines with WRITESTR at WRITEDIR directory  
-OUTPUTSTRING=$(./finder.sh "$WRITEDIR" "$WRITESTR")
 
-set +e
+#now using finder script to find number of files and number of matching matching lines with WRITESTR at WRITEDIR directory  
+#OUTPUTSTRING=$(./finder.sh "$WRITEDIR" "$WRITESTR")
+OUTPUTSTRING=$(finder.sh "$WRITEDIR" "$WRITESTR") 		#removed ./ as added in path
+
+
+#./writer /tmp/assignment-4-result.txt "$OUTPUTSTRING"  #adding step to write a file with output of the finder command to /tmp/assignment-4-result.txt
+writer /tmp/assignment-4-result.txt "$OUTPUTSTRING"   	#removed ./ as added in path
+
 echo ${OUTPUTSTRING} | grep "${MATCHSTR}"
 if [ $? -eq 0 ]; then
 	echo "success"
