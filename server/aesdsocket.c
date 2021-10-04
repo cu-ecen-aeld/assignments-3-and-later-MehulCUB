@@ -152,13 +152,8 @@ int main(int argc, char *argv[])
 
 			//redirect stdin, sdtout, stderror to /dev/null 
 			open("/dev/null", O_RDWR);
-			dup(STDIN_FILENO);
-			dup(STDOUT_FILENO);
-			dup(STDERR_FILENO);
-
-			close(STDIN_FILENO);
-			close(STDOUT_FILENO);
-			close(STDERR_FILENO);
+			dup(0);
+			dup(0);		
 		}
 	}
 	//listen for connections on a socket
