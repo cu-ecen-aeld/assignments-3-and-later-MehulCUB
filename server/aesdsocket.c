@@ -1,5 +1,7 @@
 /*
 Author : Mehul Patel 
+creating Socket server for assignment -5 
+
 refernces : 
 https://beej.us/guide/bgnet/html/
 https://www.geeksforgeeks.org/socket-programming-cc/
