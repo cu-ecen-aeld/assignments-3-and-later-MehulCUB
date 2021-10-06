@@ -1,7 +1,6 @@
 /*
 Author : Mehul Patel 
 creating Socket server for assignment -5 
-
 refernces : 
 https://beej.us/guide/bgnet/html/
 https://www.geeksforgeeks.org/socket-programming-cc/
@@ -86,6 +85,7 @@ int main(int argc, char *argv[])
 
 	//create socket 
 	socket_fd = socket(PF_INET, SOCK_STREAM, 0);
+	perror("socket:");
 	if(socket_fd == -1)
 	{
 		syslog(LOG_ERR, "Error Creating socket\n");
@@ -109,6 +109,7 @@ int main(int argc, char *argv[])
 	}
 
 	rc = bind(socket_fd, sockaddrinfo->ai_addr, sockaddrinfo->ai_addrlen);
+	perror("bind:");
 	if( rc == -1)
 	{
 		syslog(LOG_ERR, "Error in binding\n");
@@ -137,13 +138,16 @@ int main(int argc, char *argv[])
 
 			//set session id 
 			int sid = setsid();
+			perror("setsid");
 			if(sid == -1)
 			{
 				syslog(LOG_ERR, "Error in setting sid\n");
 				exit(EXIT_FAILURE);
 			}
 			//change current directory to root 
-			if (chdir("/") == -1)
+			rc=chdir("/");
+			perror("chdir");			
+			if(rc== -1)				
 			{
 				syslog(LOG_ERR, "chdir");
 				close(socket_fd);
@@ -152,12 +156,14 @@ int main(int argc, char *argv[])
 
 			//redirect stdin, sdtout, stderror to /dev/null 
 			open("/dev/null", O_RDWR);
+			perror("open");
 			dup(0);
 			dup(0);		
 		}
 	}
 	//listen for connections on a socket
 	rc = listen(socket_fd,BACKLOG);
+	perror("listen");
 	if( rc == -1)
 	{
 		syslog(LOG_ERR, "Error in listen\n");
@@ -187,6 +193,7 @@ int main(int argc, char *argv[])
 
 		//open in append or  creating file /var/tmp/aesdsocketdata file if it doesn’t exist.
 		outputfile_fd = open(FILE_PATH, O_RDWR | O_APPEND | O_CREAT, 0744);
+		perror("open ouputfile");
 		if (outputfile_fd == -1)
 		{
 			syslog(LOG_ERR, "Error in opening file");
@@ -194,6 +201,7 @@ int main(int argc, char *argv[])
 
 		//Mask off signals while transferring data 
 		rc = sigprocmask(SIG_BLOCK, &mask, NULL);
+		perror("adding mask for signal");
 		if(rc!=0) 
 		{
 			syslog(LOG_ERR, "sigprocmask");
@@ -202,16 +210,16 @@ int main(int argc, char *argv[])
 		}
 		/*
 		   recieving data in BUFFER_SIZE bytes packets  and writing into file 
-
 		   packet is considered complete when a newline character is found in the input receive stream,
 		   and each newline should result in an append to the /var/tmp/aesdsocketdata file.
 		   */	
 		//DMA for buffer for recieving data and writing		
 		rx_buf = (char *)malloc(sizeof(char) * BUFFER_SIZE);
-
+		perror("malloc"); 
 		do
 		{
 			current_rxbytes = recv(client_fd, rx_buf, BUFFER_SIZE-1, 0);
+			perror("recv"); 
 			if(current_rxbytes == -1) 
 			{
 				//perror("recv");
@@ -223,6 +231,7 @@ int main(int argc, char *argv[])
 				total_rxbytes +=current_rxbytes;
 				// Write to file
 				int written_bytes= write(outputfile_fd, rx_buf, current_rxbytes);
+				perror("write");
 				if(written_bytes == -1)
 				{
 					syslog(LOG_ERR, "Error in writing to file");
@@ -267,6 +276,7 @@ int main(int argc, char *argv[])
 		}
 		// unmask signals after transfer finished  - remove singnal set from mask set 
 		rc = sigprocmask(SIG_UNBLOCK, &mask, NULL);	
+		perror("sigprocmask unmasking");
 		if(rc!=0) 
 		{
 			syslog(LOG_ERR, "sigprocmask");
@@ -286,4 +296,3 @@ int main(int argc, char *argv[])
 	shutdown(socket_fd, SHUT_RDWR);
 	exit(EXIT_SUCCESS);
 }
-
