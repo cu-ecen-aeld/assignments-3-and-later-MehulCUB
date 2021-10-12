@@ -9,7 +9,8 @@ CC=$(CROSS_COMPILE)gcc
 
 
 CDEFS=
-CFLAGS= -g -Wall -Werror $(INCLUDE_DIRS) $(CDEFS)
+CFLAGS = -g -Wall -Werror $(INCLUDE_DIRS) $(CDEFS)
+LDFLAGS = -pthread -lrt
 LIBS= 
 
 HFILES= 
@@ -23,7 +24,7 @@ all: aesdsocket
 default: aesdsocket
 
 aesdsocket: aesdsocket.o
-	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $@.o 
+	$(CC) $(INCLUDES) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 	
 clean:
 	-rm -f *.o
@@ -33,3 +34,4 @@ depend:
 
 .c.o:
 	$(CC) $(CFLAGS) -c $<
+	
