@@ -37,9 +37,14 @@ https://www.geeksforgeeks.org/socket-programming-cc/
 #define BACKLOG 6
 #define BUFFER_SIZE 100  //max buffer size for the packet transfer
 #define TIMER_BUFFER_SIZE 100
+
+#define USE_AESD_CHAR_DEVICE 1
+
+#ifdef USE_AESD_CHAR_DEVICE
+#define FILE_PATH "/dev/aesdchar"
+#else
 #define FILE_PATH "/var/tmp/aesdsocketdata"
-
-
+#endif
 
 int socket_fd, client_fd;
 int outputfile_fd;
@@ -95,13 +100,6 @@ static void signal_handler (int signo)
 			syslog(LOG_ERR,"Failed on shutdown()");
 		}
 
-		/*
-		   if(timer_delete(timer_id)==-1)
-		   {
-		   perror("timer_delete");
-		   syslog(LOG_ERR,"failed timer delete");
-		   }
-		   */
 		terminate_on_signal = 1;		 
 		return;		 
 	}
@@ -121,15 +119,27 @@ void delete_linkedlist()
 //thread hadler function for handling connection with client -  rx and send data 
 void* thread_func(void* thread_param)
 {
+
 	thread_data_t *tparam = (thread_data_t*)thread_param;
+
 	int received_bytes, write_bytes, read_bytes, sent_bytes;
 	int rx_loc = 0;
-	int count = 1;
+	int count = 1;	
 	char ch;
 	int index = 0;
 	int newline_index =0;
 	int curr_sendbytes =0;
 	int total_txbuffsize = BUFFER_SIZE;
+	
+#ifdef USE_AESD_CHAR_DEVICE
+	// open file at FILE_PATH
+	outputfile_fd = open(FILE_PATH, O_CREAT | O_RDWR | O_TRUNC, 0666);
+	if(outputfile_fd < 0)
+	{
+		   syslog(LOG_ERR, "Error : outputfile_fd couldn't be opened");
+		   return NULL;
+	}
+#endif
 
 	// allocate memory for buffers
 	tparam->rxbuf = (char *)malloc(BUFFER_SIZE*sizeof(char));
@@ -211,7 +221,6 @@ void* thread_func(void* thread_param)
 		perror("Mutex unlock failed\n");
 		terminate_on_error =1;
 		return NULL;
-
 	}
 
 	// unblock the signals SIGINT and SIGTERM
@@ -221,27 +230,15 @@ void* thread_func(void* thread_param)
 		syslog(LOG_ERR,"Error while unblocking the signals SIGINT, SIGTERM");
 		terminate_on_error =1;
 		return NULL;
-
-	}
-	/*----------------------------------------------------------------*/
-	int size  = lseek(outputfile_fd,0,SEEK_END);
-	tparam->txbuf = (char *)realloc(tparam->txbuf, size*sizeof(char));
-	if(tparam->txbuf == NULL)
-	{
-		close(tparam->client_fd);
-		syslog(LOG_ERR,"Error while doing realloc\n");
-		terminate_on_error =1;
-		return NULL;
-
 	}
 
+	/*----------------------------------------------------------*/
 	rc = pthread_mutex_lock(tparam->mutex); //lock mutex
 	if(rc != 0)
 	{
 		syslog(LOG_ERR,"Mutex lock failed\n");
 		terminate_on_error =1;
 		return NULL;
-
 	}
 
 	// block the signals SIGINT and SIGTERM
@@ -251,12 +248,15 @@ void* thread_func(void* thread_param)
 		syslog(LOG_ERR,"Error while blocking the signals SIGINT, SIGTERM");
 		terminate_on_error =1;
 		return NULL;
-
 	}	
-	/*---------------------------------------------------------------*/
+	/*----------------------------------------------------------*/
+	#ifdef USE_AESD_CHAR_DEVICE
 	//read data from file send packet by packet to client
 	lseek(outputfile_fd, 0, SEEK_SET); //set cursor to start
-	
+	#endif
+	/*----------------------------------------------------------*/
+
+	//read data from file send packet by packet to client
 	while((read_bytes = read(outputfile_fd,&ch,1)) > 0)
 	{
 		if(read_bytes < 0)
@@ -288,7 +288,7 @@ void* thread_func(void* thread_param)
 		    tparam->txbuf=realloc(tparam->txbuf,sizeof(char)*total_txbuffsize);
 		}
 	}
-	/*-----------------------------------------------------------------*/ 
+	/*----------------------------------------------------------*/
 	rc = pthread_mutex_unlock(tparam->mutex); // unlock mutex
 	if(rc != 0)
 	{
@@ -306,7 +306,6 @@ void* thread_func(void* thread_param)
 		syslog(LOG_ERR,"Error while unblocking the signals SIGINT, SIGTERM");
 		terminate_on_error =1;
 		return NULL;
-
 	}
 
 	// close connection
@@ -320,6 +319,7 @@ void* thread_func(void* thread_param)
 	return NULL;	
 }
 
+#ifndef USE_AESD_CHAR_DEVICE
 //add timespecs and store in result
 static void timespec_add(const struct timespec *ts_1, const struct timespec *ts_2, struct timespec *result)
 {
@@ -367,6 +367,7 @@ static void timer_threadfn(union sigval sigval)
 		return;
 	}
 }
+#endif
 
 int main(int argc, char*argv[])
 {
@@ -485,7 +486,6 @@ int main(int argc, char*argv[])
 		syslog(LOG_ERR,"error in initializing the mutex\n");
 		terminate_on_error =1;
 		goto clean_and_exit;
-		exit(EXIT_FAILURE);
 	}
 
 	/*-------------------------------------------------------------------*/	
@@ -534,14 +534,17 @@ int main(int argc, char*argv[])
 			dup(0);						 
 		}
 	}
-	timer_t timer_id;
+	
 	/*-------------------------------------------------------------------------------*/	
+	
 	//set up timer functionality
 	if((daemon_mode == 0) || (pid == 0))
 	{
 		struct sigevent sev;
 		memset(&sev,0,sizeof(struct sigevent));
 
+#ifndef USE_AESD_CHAR_DEVICE
+		timer_t timer_id;
 		// setup timer
 		sev.sigev_notify = SIGEV_THREAD;
 		sev.sigev_notify_function = timer_threadfn;
@@ -584,6 +587,7 @@ int main(int argc, char*argv[])
 			terminate_on_error =1; 
 			goto clean_and_exit;
 		} 
+#endif
 	}
 	/*-------------------------------------------------------------------------------*/
 	// listen
@@ -595,6 +599,15 @@ int main(int argc, char*argv[])
 		goto clean_and_exit;
 	}
 	/*-------------------------------------------------------------------------------*/  
+	outputfile_fd = open(FILE_PATH, O_CREAT | O_RDWR, 0644);
+	if(outputfile_fd < 0)
+	{
+		syslog(LOG_ERR, "Error: file specified as argument couldn't be opened(outputfile_fd < 0)");
+		terminate_on_error =1;
+		goto clean_and_exit;
+	}
+	
+#ifndef USE_AESD_CHAR_DEVICE	
 	//open in append or  creating file /var/tmp/aesdsocketdata file if it doesn’t exist.
 	//outputfile_fd = open(FILE_PATH, O_CREAT | O_RDWR | O_APPEND, 0744);
 	outputfile_fd = open(FILE_PATH, O_CREAT | O_RDWR, 0644);
@@ -604,7 +617,7 @@ int main(int argc, char*argv[])
 		terminate_on_error =1;
 		goto clean_and_exit;
 	}
-
+#endif
 	SLIST_INIT(&head); //initialize linked list
 
 	//datastructure for client socket address  
@@ -612,16 +625,16 @@ int main(int argc, char*argv[])
 	socklen_t addr_size;
 	addr_size = sizeof(clientsockaddr);
 
+	
 	while(!(terminate_on_error) && !(terminate_on_signal))
 	{
 		/* accept a connection on a socket, creates a new connected socket, and returns a new file descrtor */
 		client_fd = accept(socket_fd, (struct sockaddr *)&clientsockaddr, &addr_size);
 		if(client_fd < 0)
 		{
-			syslog(LOG_ERR,"Error while accpeting incomming connection\n");			 
-			goto clean_and_exit;
+			syslog(LOG_ERR,"Error while accpeting incomming connection\n");		 			
 			terminate_on_error =1;
-			break;
+			goto clean_and_exit;			 
 		}
 		/* print accepted client IP address */
 		char *client_ip_address = inet_ntoa(clientsockaddr.sin_addr);	 //	 convert the IP address to a string
@@ -635,8 +648,7 @@ int main(int argc, char*argv[])
 		{
 			syslog(LOG_ERR,"Error while doing malloc\n");
 			terminate_on_error =1;
-			goto clean_and_exit;
-			break;
+			goto clean_and_exit;			 
 		}
 
 		//store thread parameters
@@ -673,17 +685,21 @@ int main(int argc, char*argv[])
 	/*----------------------------------------------------------------------------*/
 	//do clean up and closing file descriptors and exit 
 clean_and_exit:
-
+	
+	#ifndef USE_AESD_CHAR_DEVICE
 	if(timer_delete(timer_id)==-1)
 	{
 		perror("timer_delete");
 		syslog(LOG_ERR,"failed timer delete");
 	}
+	#endif
 	close(socket_fd);
-	close(outputfile_fd);
 	closelog();
+	
+#ifndef USE_AESD_CHAR_DEVICE	
+	close(outputfile_fd);	
 	remove(FILE_PATH);
-
+#endif
 	//cancel threads which are not completed and free associated pointers
 	SLIST_FOREACH(node,&head,entries)
 	{
