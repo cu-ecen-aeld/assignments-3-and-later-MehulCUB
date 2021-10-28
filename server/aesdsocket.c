@@ -257,7 +257,6 @@ void* thread_func(void* thread_param)
 	//read data from file send packet by packet to client
 	lseek(outputfile_fd, 0, SEEK_SET); //set cursor to start
 	
-	//read data from file send packet by packet to client
 	while((read_bytes = read(outputfile_fd,&ch,1)) > 0)
 	{
 		if(read_bytes < 0)
@@ -613,7 +612,6 @@ int main(int argc, char*argv[])
 	socklen_t addr_size;
 	addr_size = sizeof(clientsockaddr);
 
-	//while((!stop))
 	while(!(terminate_on_error) && !(terminate_on_signal))
 	{
 		/* accept a connection on a socket, creates a new connected socket, and returns a new file descrtor */
