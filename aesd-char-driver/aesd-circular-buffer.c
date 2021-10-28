@@ -9,7 +9,7 @@
  */
 
 #ifdef __KERNEL__
-#include <linux/string.h
+#include <linux/string.h>
 #else
 #include <string.h>			   
 #endif
@@ -34,16 +34,16 @@ struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(
 	/**
 	 * TODO: implement per description
 	 */
-	 
+
 	//null check 
 	if( (buffer == NULL) || (entry_offset_byte_rtn == NULL))
 	{
 		return NULL;
 	}
-	
+
 	uint8_t cur_pos = buffer->out_offs;
 	uint8_t write_count = 0;
-		
+
 	while(write_count < AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED)
 	{
 		write_count++;
@@ -53,7 +53,7 @@ struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(
 			*entry_offset_byte_rtn = char_offset;
 			return &(buffer->entry[cur_pos]);
 		}
-		
+
 		char_offset = char_offset-buffer->entry[cur_pos].size;	
 		cur_pos++;
 		cur_pos = (cur_pos) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;		
@@ -74,21 +74,21 @@ const char* aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, 
 	/**
 	 * TODO: implement per description 
 	 */
-	
+
 	const char* replace_pointer = NULL;
 	//null check 
 	if((buffer == NULL) || (add_entry == NULL))
 	{
 		return replace_pointer;
 	}
-	
+
 	if(buffer->full)
-        replace_pointer = buffer->entry[buffer->in_offs].buffptr;
-	 
+		replace_pointer = buffer->entry[buffer->in_offs].buffptr;
+
 	//add entry at buffer->in_offs location 
 	buffer->entry[buffer->in_offs] = *add_entry;
 	buffer->in_offs++;
-	
+
 	//rollover, if full overwrite 
 	buffer->in_offs = (buffer->in_offs) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED; 
 
@@ -98,7 +98,7 @@ const char* aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, 
 		buffer->out_offs++;
 		buffer->out_offs = (buffer->out_offs) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
 	}
- 
+
 	//if in and out offset pointer are same => buffer full 
 	if(buffer->in_offs == buffer->out_offs)
 	{
@@ -116,8 +116,8 @@ void aesd_circular_buffer_init(struct aesd_circular_buffer *buffer)
 }
 
 /*
-*free up allocated memory
-*/
+ *free up allocated memory
+ */
 void aesd_circular_buffer_clean(struct aesd_circular_buffer *buffer)
 {
 	struct aesd_buffer_entry *entry;
