@@ -9,12 +9,9 @@
  */
 
 #ifdef __KERNEL__
-#include <linux/string.h>
-#include <linux/slab.h> //for kfree								   
+#include <linux/string.h
 #else
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h> 	// for free							   
+#include <string.h>			   
 #endif
 
 #include "aesd-circular-buffer.h"
@@ -28,7 +25,7 @@
  *      in aesd_buffer. 
  * @return the struct aesd_buffer_entry structure representing the position described by char_offset, or
  * NULL if this position is not available in the buffer (not enough data is written).
- */
+ */ 
 struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(
 		struct aesd_circular_buffer *buffer,
 		size_t char_offset, 
@@ -45,25 +42,24 @@ struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(
 	}
 	
 	uint8_t cur_pos = buffer->out_offs;
-
-	while(cur_pos!=buffer->out_offs)	
+	uint8_t write_count = 0;
+		
+	while(write_count < AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED)
 	{
+		write_count++;
 		//if matching char_offset is found 
 		if(char_offset < buffer->entry[cur_pos].size)
 		{
 			*entry_offset_byte_rtn = char_offset;
 			return &(buffer->entry[cur_pos]);
 		}
-		else
-		{
-			char_offset = char_offset-buffer->entry[cur_pos].size;	
-			cur_pos++;
-			cur_pos = (cur_pos) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;			
-		}	
+		
+		char_offset = char_offset-buffer->entry[cur_pos].size;	
+		cur_pos++;
+		cur_pos = (cur_pos) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;		
 	}
 	return NULL;
 }
-
 /**
  * Adds entry @param add_entry to @param buffer in the location specified in buffer->in_offs.
  * If the buffer was already full, overwrites the oldest entry and advances buffer->out_offs to the
