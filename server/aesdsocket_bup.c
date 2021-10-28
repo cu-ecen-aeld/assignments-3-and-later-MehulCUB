@@ -39,8 +39,6 @@ https://www.geeksforgeeks.org/socket-programming-cc/
 #define TIMER_BUFFER_SIZE 100
 #define FILE_PATH "/var/tmp/aesdsocketdata"
 
-
-
 int socket_fd, client_fd;
 int outputfile_fd;
 int terminate_on_error = 0; 
@@ -121,15 +119,12 @@ void delete_linkedlist()
 //thread hadler function for handling connection with client -  rx and send data 
 void* thread_func(void* thread_param)
 {
+
 	thread_data_t *tparam = (thread_data_t*)thread_param;
-	int received_bytes, write_bytes, read_bytes, sent_bytes;
+
+	int received_bytes, write_bytes, read_bytes, send_bytes;
 	int rx_loc = 0;
 	int count = 1;
-	char ch;
-	int index = 0;
-	int newline_index =0;
-	int curr_sendbytes =0;
-	int total_txbuffsize = BUFFER_SIZE;
 
 	// allocate memory for buffers
 	tparam->rxbuf = (char *)malloc(BUFFER_SIZE*sizeof(char));
@@ -223,7 +218,7 @@ void* thread_func(void* thread_param)
 		return NULL;
 
 	}
-	/*----------------------------------------------------------------*/
+
 	int size  = lseek(outputfile_fd,0,SEEK_END);
 	tparam->txbuf = (char *)realloc(tparam->txbuf, size*sizeof(char));
 	if(tparam->txbuf == NULL)
@@ -253,43 +248,31 @@ void* thread_func(void* thread_param)
 		return NULL;
 
 	}	
-	/*---------------------------------------------------------------*/
+
+	/*
+TODO : sending at broken packet logic failing for valgrind
+*/
 	//read data from file send packet by packet to client
 	lseek(outputfile_fd, 0, SEEK_SET); //set cursor to start
-	
-	//read data from file send packet by packet to client
-	while((read_bytes = read(outputfile_fd,&ch,1)) > 0)
+	read_bytes = read(outputfile_fd, tparam->txbuf, size); //read bytes
+	if(read_bytes < 0)
 	{
-		if(read_bytes < 0)
-		{
-			close(tparam->client_fd);
-			syslog(LOG_ERR,"Error in reading bytes\n");
-			terminate_on_error =1;
-			return NULL;
-		}
-		tparam->txbuf[index] = ch;
-		
-		if(tparam->txbuf[index]=='\n')
-		{
-			curr_sendbytes = (index + 1) - newline_index;
-			sent_bytes = send(tparam->client_fd, tparam->txbuf+newline_index, curr_sendbytes, 0);//send bytes
-			if(sent_bytes < 0)
-			{
-				close(tparam->client_fd);
-				syslog(LOG_ERR,"Error in sending bytes\n");
-				terminate_on_error =1; 
-				return NULL;				 
-			}
-			newline_index = index + 1;
-		}
-		index++;
-		if(index >= total_txbuffsize)
-		{
-		    total_txbuffsize += BUFFER_SIZE;
-		    tparam->txbuf=realloc(tparam->txbuf,sizeof(char)*total_txbuffsize);
-		}
+		close(tparam->client_fd);
+		syslog(LOG_ERR,"Error in reading bytes\n");
+		terminate_on_error =1;
+		return NULL;
+
 	}
-	/*-----------------------------------------------------------------*/ 
+
+	send_bytes = send(tparam->client_fd, tparam->txbuf, read_bytes, 0);//send bytes
+	if(send_bytes < 0)
+	{
+		close(tparam->client_fd);
+		syslog(LOG_ERR,"Error in sending bytes\n");
+		terminate_on_error =1;
+		return NULL;
+	}			
+
 	rc = pthread_mutex_unlock(tparam->mutex); // unlock mutex
 	if(rc != 0)
 	{
@@ -350,6 +333,7 @@ static void timer_threadfn(union sigval sigval)
 	{
 		perror("pthread_mutex_lock");
 		syslog(LOG_ERR, "Mutex lock failed\n");
+
 	}
 
 	// write to file
@@ -597,8 +581,7 @@ int main(int argc, char*argv[])
 	}
 	/*-------------------------------------------------------------------------------*/  
 	//open in append or  creating file /var/tmp/aesdsocketdata file if it doesn’t exist.
-	//outputfile_fd = open(FILE_PATH, O_CREAT | O_RDWR | O_APPEND, 0744);
-	outputfile_fd = open(FILE_PATH, O_CREAT | O_RDWR, 0644);
+	outputfile_fd = open(FILE_PATH, O_CREAT | O_RDWR | O_APPEND, 0744);
 	if(outputfile_fd < 0)
 	{
 		syslog(LOG_ERR, "Error: file specified as argument couldn't be opened(outputfile_fd < 0)");
@@ -613,7 +596,7 @@ int main(int argc, char*argv[])
 	socklen_t addr_size;
 	addr_size = sizeof(clientsockaddr);
 
-	//while((!stop))
+	
 	while(!(terminate_on_error) && !(terminate_on_signal))
 	{
 		/* accept a connection on a socket, creates a new connected socket, and returns a new file descrtor */
