@@ -309,7 +309,10 @@ void* thread_func(void* thread_param)
 	}
 
 	// close connection
-	close(tparam->client_fd);	 
+	close(tparam->client_fd);
+	
+	close(outputfile_fd);	
+		 
 	syslog(LOG_DEBUG, "Closed connection from %s\n", tparam->client_ip);
 	//printf("Closed connection from %s\n", tparam->client_ip);
 	free(tparam->rxbuf);
@@ -696,10 +699,10 @@ clean_and_exit:
 	close(socket_fd);
 	closelog();
 	
-#ifndef USE_AESD_CHAR_DEVICE	
+//#ifndef USE_AESD_CHAR_DEVICE	
 	close(outputfile_fd);	
 	remove(FILE_PATH);
-#endif
+//#endif
 	//cancel threads which are not completed and free associated pointers
 	SLIST_FOREACH(node,&head,entries)
 	{
